@@ -536,19 +536,18 @@
         }
 
         // Build speech text
-        const dateText = `${formatThaiDay(currentDate)} ${formatThaiDate(currentDate)}`;
-        let speechText = `สวัสดีค่ะ ${dateText} `;
+        let speechText = `สวัสดีค่ะ `;
 
         if (uncompleted.length === 0) {
             speechText += 'กิจกรรมทั้งหมดเสร็จเรียบร้อยแล้วค่ะ ยินดีด้วย!';
         } else {
-            speechText += `คุณมี ${uncompleted.length} กิจกรรมที่ต้องทำ `;
+            speechText += `วันนี้มี ${uncompleted.length} กิจกรรมที่ต้องทำ `;
 
             uncompleted.forEach((evt, i) => {
                 speechText += `รายการที่ ${i + 1}: ${evt.title} `;
             });
 
-            speechText += 'หมดแล้วค่ะ สู้ๆนะคะ!';
+            speechText += 'สู้ๆนะคะ!';
         }
 
         speak(speechText);
