@@ -1,7 +1,7 @@
 /* ===================================================================
-   WhatDay — Daily Task Companion App
-   Main application logic
-   =================================================================== */
+  WhatDay — Daily Task Companion App
+  Main application logic
+  =================================================================== */
 
 (() => {
     'use strict';
@@ -10,7 +10,9 @@
     const STORAGE_KEYS = {
         EVENTS: 'whatday_events',
         SETTINGS: 'whatday_settings',
-        ICS_URL: 'whatday_ics_url'
+        ICS_URL: 'whatday_ics_url',
+        MOODS: 'whatday_moods',
+        HABITS: 'whatday_habits'
     };
 
     const CATEGORY_LABELS = {
@@ -86,14 +88,32 @@
         settingMorningTime: $('#setting-morning-time'),
         btnSaveSettings: $('#btn-save-settings'),
         notificationDot: $('#notification-dot'),
-        toastContainer: $('#toast-container')
+        toastContainer: $('#toast-container'),
+        // Mood & Habits
+        moodBtns: $$('.mood-btn'),
+        habitCheckboxes: $$('.habit-chip input'),
+        // Weather
+        weatherBadge: $('#weather-badge'),
+        weatherIcon: $('#weather-icon'),
+        weatherTemp: $('#weather-temp'),
+        // Timer
+        modalTimer: $('#modal-timer'),
+        timerDisplay: $('#timer-display'),
+        btnTimerStart: $('#btn-timer-start'),
+        btnTimerReset: $('#btn-timer-reset'),
+        btnOpenTimer: $('#btn-open-timer'),
+        timerStatus: $('#timer-status')
     };
 
     // ─── Initialization ──────────────────────────────────────────────
     function init() {
         loadData();
         updateDateDisplay();
+        updateDateDisplay();
         renderEvents();
+        renderMood();
+        renderHabits();
+        fetchWeather();
         bindEvents();
         registerServiceWorker();
         updateNotificationStatus();
@@ -740,6 +760,162 @@
         }, 3000);
     }
 
+    // ─── Mood Tracker ────────────────────────────────────────────────
+    function getMoods() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.MOODS) || '{}');
+        } catch { return {}; }
+    }
+
+    function saveMood(mood) {
+        const moods = getMoods();
+        const key = formatDateKey(currentDate);
+        moods[key] = mood;
+        localStorage.setItem(STORAGE_KEYS.MOODS, JSON.stringify(moods));
+        renderMood();
+        showToast('บันทึกอารมณ์เรียบร้อย', 'success');
+    }
+
+    function renderMood() {
+        const moods = getMoods();
+        const key = formatDateKey(currentDate);
+        const currentMood = moods[key];
+
+        DOM.moodBtns.forEach(btn => {
+            if (btn.dataset.mood === currentMood) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    }
+
+    // ─── Daily Habits ────────────────────────────────────────────────
+    function getHabits() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.HABITS) || '{}');
+        } catch { return {}; }
+    }
+
+    function toggleHabit(habitName) {
+        const habits = getHabits();
+        const key = formatDateKey(currentDate);
+
+        if (!habits[key]) habits[key] = [];
+
+        const dayHabits = habits[key];
+        const idx = dayHabits.indexOf(habitName);
+
+        if (idx > -1) {
+            dayHabits.splice(idx, 1);
+        } else {
+            dayHabits.push(habitName);
+        }
+
+        localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+        // No re-render needed for checkbox, but good for sync
+    }
+
+    function renderHabits() {
+        const habits = getHabits();
+        const key = formatDateKey(currentDate);
+        const dayHabits = habits[key] || [];
+
+        DOM.habitCheckboxes.forEach(box => {
+            box.checked = dayHabits.includes(box.dataset.habit);
+        });
+    }
+
+    // ─── Weather Widget ──────────────────────────────────────────────
+    async function fetchWeather() {
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            try {
+                const { latitude, longitude } = pos.coords;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                const temp = Math.round(data.current.temperature_2m);
+                const code = data.current.weather_code;
+                const icon = getWeatherIcon(code);
+
+                DOM.weatherTemp.textContent = `${temp}°C`;
+                DOM.weatherIcon.textContent = icon;
+                DOM.weatherBadge.classList.remove('hidden');
+            } catch (err) {
+                console.error('Weather error:', err);
+            }
+        }, (err) => {
+            console.log('Location denied:', err);
+        });
+    }
+
+    function getWeatherIcon(code) {
+        // WMO Weather interpretation codes (https://open-meteo.com/en/docs)
+        if (code <= 1) return '☀️';
+        if (code <= 3) return '⛅';
+        if (code <= 48) return '🌫️';
+        if (code <= 67) return '🌧️';
+        if (code <= 77) return '❄️';
+        if (code <= 82) return '🌧️';
+        if (code <= 99) return '⛈️';
+        return '🌤️';
+    }
+
+    // ─── Focus Timer ─────────────────────────────────────────────────
+    let timerInterval = null;
+    let timerSeconds = 25 * 60;
+    let isTimerRunning = false;
+
+    function openTimer() {
+        openModal('modal-timer');
+    }
+
+    function startTimer() {
+        if (isTimerRunning) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            DOM.btnTimerStart.textContent = 'เริ่มจับเวลา';
+            DOM.btnTimerStart.classList.remove('btn-danger'); // Assuming danger class exists or just default
+            return;
+        }
+
+        isTimerRunning = true;
+        DOM.btnTimerStart.textContent = 'หยุดชั่วคราว';
+
+        timerInterval = setInterval(() => {
+            timerSeconds--;
+            updateTimerDisplay();
+
+            if (timerSeconds <= 0) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                DOM.btnTimerStart.textContent = 'เริ่มจับเวลา';
+                timerSeconds = 25 * 60;
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => { });
+                showSystemNotification('⏰ หมดเวลา!', 'ครบ 25 นาทีแล้ว พักผ่อนหน่อยนะ');
+                openModal('modal-timer');
+            }
+        }, 1000);
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        timerSeconds = 25 * 60;
+        updateTimerDisplay();
+        DOM.btnTimerStart.textContent = 'เริ่มจับเวลา';
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timerSeconds / 60);
+        const s = timerSeconds % 60;
+        DOM.timerDisplay.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
     // ─── Service Worker ──────────────────────────────────────────────
     async function registerServiceWorker() {
         if ('serviceWorker' in navigator) {
@@ -809,6 +985,21 @@
                 closeModal(btn.dataset.close);
             });
         });
+
+        // Mood Tracker
+        DOM.moodBtns.forEach(btn => {
+            btn.addEventListener('click', () => saveMood(btn.dataset.mood));
+        });
+
+        // Habits
+        DOM.habitCheckboxes.forEach(box => {
+            box.addEventListener('change', () => toggleHabit(box.dataset.habit));
+        });
+
+        // Focus Timer
+        if (DOM.btnOpenTimer) DOM.btnOpenTimer.addEventListener('click', openTimer);
+        DOM.btnTimerStart.addEventListener('click', startTimer);
+        DOM.btnTimerReset.addEventListener('click', resetTimer);
 
         $$('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', (e) => {
