@@ -544,7 +544,7 @@
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'th-TH';
-        utterance.rate = 0.9;
+        utterance.rate = 1.2;
         utterance.pitch = 1;
 
         // Try to find Thai voice (Siri on iOS)
