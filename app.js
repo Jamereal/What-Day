@@ -525,11 +525,7 @@
             speechText += `คุณมี ${uncompleted.length} กิจกรรมที่ต้องทำ `;
 
             uncompleted.forEach((evt, i) => {
-                const timeText = evt.time ? `เวลา ${evt.time.replace(':', ' นาฬิกา ')} นาที` : '';
-                speechText += `รายการที่ ${i + 1}: ${evt.title} ${timeText} `;
-                if (evt.endTime) {
-                    speechText += `ถึง ${evt.endTime.replace(':', ' นาฬิกา ')} นาที `;
-                }
+                speechText += `รายการที่ ${i + 1}: ${evt.title} `;
             });
 
             speechText += 'หมดแล้วค่ะ สู้ๆนะคะ!';
