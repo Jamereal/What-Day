@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WhatDay">
+    <meta name="theme-color" content="#ff69b4">
+    <meta name="description" content="แอปอ่านกิจกรรมประจำวันพร้อมเสียง Siri และแจ้งเตือนบน iPhone">
+    <title>WhatDay — กิจกรรมวันนี้</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Ambient background blobs -->
+    <div class="ambient-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="logo-section">
+                    <div class="logo-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                            <circle cx="12" cy="16" r="2" />
+                        </svg>
+                    </div>
+                    <h1 class="app-title">WhatDay</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-import" class="icon-btn" title="Import Calendar">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                    </button>
+                    <button id="btn-notification-settings" class="icon-btn" title="ตั้งค่าแจ้งเตือน">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <span id="notification-dot" class="notification-dot hidden"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date display -->
+            <div class="date-display">
+                <button id="btn-prev-day" class="nav-btn" aria-label="วันก่อนหน้า">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+                <div class="date-info" id="date-info">
+                    <span class="date-thai" id="date-thai">วันพฤหัสบดี</span>
+                    <span class="date-full" id="date-full">19 กุมภาพันธ์ 2569</span>
+                </div>
+                <button id="btn-next-day" class="nav-btn" aria-label="วันถัดไป">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-total">0</span>
+                    <span class="stat-label">กิจกรรม</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-done">0</span>
+                    <span class="stat-label">เสร็จแล้ว</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number" id="stat-remaining">0</span>
+                    <span class="stat-label">เหลืออยู่</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Empty state -->
+            <div id="empty-state" class="empty-state">
+                <div class="empty-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </div>
+                <h2>ยังไม่มีกิจกรรมวันนี้</h2>
+                <p>เพิ่มกิจกรรมใหม่หรือ import จากปฏิทิน</p>
+            </div>
+
+            <!-- Events list -->
+            <div id="events-container" class="events-container hidden"></div>
+        </main>
+
+        <!-- Voice FAB -->
+        <button id="btn-voice" class="voice-fab" title="อ่านกิจกรรมวันนี้">
+            <div class="voice-fab-ring"></div>
+            <svg class="voice-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <svg class="voice-stop-icon hidden" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+        </button>
+
+        <!-- Add event FAB -->
+        <button id="btn-add" class="add-fab" title="เพิ่มกิจกรรม">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Add/Edit Event Modal -->
+    <div id="modal-event" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-event-title">เพิ่มกิจกรรมใหม่</h2>
+                <button class="modal-close" data-close="modal-event">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <form id="event-form" class="modal-body">
+                <input type="hidden" id="event-id">
+                <div class="form-group">
+                    <label for="event-title">ชื่อกิจกรรม</label>
+                    <input type="text" id="event-title" placeholder="เช่น ประชุมทีม" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="event-date">วันที่</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-time">เวลา</label>
+                        <input type="time" id="event-time" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="event-end-time">เวลาสิ้นสุด (ไม่บังคับ)</label>
+                    <input type="time" id="event-end-time">
+                </div>
+                <div class="form-group">
+                    <label for="event-category">หมวดหมู่</label>
+                    <select id="event-category">
+                        <option value="work">💼 งาน</option>
+                        <option value="personal">👤 ส่วนตัว</option>
+                        <option value="health">💪 สุขภาพ</option>
+                        <option value="study">📚 การเรียน</option>
+                        <option value="meeting">🤝 ประชุม</option>
+                        <option value="other">📌 อื่นๆ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="event-notes">บันทึกเพิ่มเติม</label>
+                    <textarea id="event-notes" rows="3" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
+                </div>
+                <div class="form-group toggle-group">
+                    <label for="event-notify">แจ้งเตือน</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="event-notify" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="btn-delete-event" class="btn btn-danger hidden">ลบ</button>
+                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import ICS Modal -->
+    <div id="modal-import" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Import ปฏิทิน</h2>
+                <button class="modal-close" data-close="modal-import">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="import-description">วาง ICS URL จาก Apple Calendar หรืออัปโหลดไฟล์ .ics เพื่อ import กิจกรรม
+                </p>
+                <div class="form-group">
+                    <label for="ics-url">ICS Calendar URL</label>
+                    <input type="url" id="ics-url" placeholder="https://calendar.example.com/calendar.ics">
+                </div>
+                <div class="import-divider">
+                    <span>หรือ</span>
+                </div>
+                <div class="form-group">
+                    <label for="ics-file" class="file-upload-label">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>เลือกไฟล์ .ics</span>
+                    </label>
+                    <input type="file" id="ics-file" accept=".ics" class="file-input">
+                    <span id="ics-file-name" class="file-name"></span>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="btn-import-submit" class="btn btn-primary">Import</button>
+                </div>
+                <div id="import-status" class="import-status hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div id="modal-notifications" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>ตั้งค่าแจ้งเตือน</h2>
+                <button class="modal-close" data-close="modal-notifications">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="notification-permission" id="notification-permission">
+                    <div class="permission-status" id="permission-status">
+                        <span class="permission-icon">🔔</span>
+                        <span>สถานะ: <strong id="permission-text">ไม่ทราบ</strong></span>
+                    </div>
+                    <button id="btn-request-permission" class="btn btn-primary">อนุญาตแจ้งเตือน</button>
+                </div>
+                <div class="form-group toggle-group">
+                    <div>
+                        <label>แจ้งเตือนสรุปประจำวัน</label>
+                        <p class="setting-desc">อ่านสรุปกิจกรรมทุกเช้า</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-daily-summary" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="form-group toggle-group">
+                    <div>
+                        <label>แจ้งเตือนก่อนกิจกรรม</label>
+                        <p class="setting-desc">แจ้งเตือน 15 นาทีก่อนเริ่ม</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-before-event" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="form-group toggle-group">
+                    <div>
+                        <label>อ่านด้วยเสียงอัตโนมัติ</label>
+                        <p class="setting-desc">อ่านกิจกรรมด้วยเสียงตอนเช้า</p>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-auto-voice">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="setting-morning-time">เวลาแจ้งเตือนเช้า</label>
+                    <input type="time" id="setting-morning-time" value="07:00">
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="btn-save-settings" class="btn btn-primary">บันทึกตั้งค่า</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
